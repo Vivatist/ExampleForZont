@@ -13,34 +13,22 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
-import android.util.Log;
 import android.widget.Toast;
-
-import org.jetbrains.annotations.Nullable;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
-import ru.bchstudio.ponk.Constants;
 import ru.bchstudio.ponk.MainActivity;
-import ru.bchstudio.ponk.WeatherPOJO;
-import ru.bchstudio.ponk.web.OnWebAsyncTaskCompleted;
 import ru.bchstudio.ponk.R;
-import ru.bchstudio.ponk.web.WebAsyncTask;
 
-public class BackgroundService extends Service implements OnWebAsyncTaskCompleted {
+public class BackgroundService extends Service  {
 
-    private static final String TAG = WebAsyncTask.class.getName();
     private Thread mainThread;
     public static Intent serviceIntent = null;
     private static final String CHANNEL_ID = "Channel ID"; //TODO придумать более удачное название
     private static final String CHANNEL_NAME = "Channel name"; //TODO придумать более удачное название
-    private static final int NOTIFICATION_ID = 1010;
+    private static final int NOTIFICATION_ID = 1010;  // ID сообщения
 
+    private boolean flag = true;
 
     public BackgroundService() {
     }
@@ -71,29 +59,37 @@ public class BackgroundService extends Service implements OnWebAsyncTaskComplete
 
         startForeground(NOTIFICATION_ID, prepareNotification(R.drawable.ic_stat_cloud_done, "MyTitleDone", "MyTextDone", Calendar.getInstance().getTime()));
 
-        if (Constants.ENABLED_DEBUG_TWIST) showToast(getApplication(), "Start Foreground Service");
-
-        final OnWebAsyncTaskCompleted lstnr = this;
+        showToast(getApplication(), "Start Foreground Service");
 
         //Создаем отдельный поток
         mainThread = new Thread(new Runnable() {
             @Override
             public void run() {
 
+
                 //Бесконечный цикл
-                boolean run = true;
-                while (run) {
+                while (true) {
+
+                    /////////////////////////////////////////////////
+                    //ТУТ КАКАЯ-ТО РАБОТА КОТОРУЮ ВЫПОЛНЯЕТ СЕРВИС
+
+
+                    //например переключение иконок
+                    notifiSwitch();
+
+                    //или вывод сообщений
+                    showToast(getApplication(),"Сервис жив!");
+
+                    //Пауза
                     try {
 
-
-                        new WebAsyncTask(Constants.WEATHER_URL, Constants.HTTP_REQUEST_TIMEOUT, lstnr, getApplicationContext()).execute();
-                        Thread.sleep(Constants.WEATHER_REQUEST_INTERVAL);
-
-
+                        Thread.sleep(5000);
                     } catch (InterruptedException e) {
-                        run = false;
                         e.printStackTrace();
                     }
+
+                    /////////////////////////////////////////////////
+
                 }
             }
         });
@@ -136,8 +132,25 @@ public class BackgroundService extends Service implements OnWebAsyncTaskComplete
     }
 
 
+    //Пример переключения notification
+    //Скорее всего лишнее, но на всякий случай пусть будет
+    private void notifiSwitch(){
+        Notification notification;
+        if (flag) {
+            notification = prepareNotification(R.drawable.ic_stat_cloud_done, "Делай раз", "Карабас", Calendar.getInstance().getTime());
+        } else {
+            notification = prepareNotification(R.drawable.ic_stat_cloud_off, "Делай два", "Борода",Calendar.getInstance().getTime());
+        }
 
-    //Пример работы с интерфейсом из потока
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        mNotificationManager.notify(NOTIFICATION_ID, notification);
+
+        flag = !flag;
+    }
+
+
+
+    //Toast из потока в UI
     public void showToast(final Application application, final String msg) {
         Handler h = new Handler(application.getMainLooper());
         h.post(new Runnable() {
@@ -148,7 +161,7 @@ public class BackgroundService extends Service implements OnWebAsyncTaskComplete
         });
     }
 
-
+    //Тут настраивается Notification для вывода , можно переписать под себя
     private Notification prepareNotification(int icon, String contentTitle, String contentText, Date upd_time) {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID);
@@ -176,55 +189,8 @@ public class BackgroundService extends Service implements OnWebAsyncTaskComplete
 
 
 
-    private int getIcon(int value){
-
-        String nameResource;
-        int result;
-        try {
-            if (value >= 0){
-                nameResource = "ic_degrees_"+ value;
-                return R.drawable.class.getField(nameResource).getInt(getResources());
-            } else {
-                nameResource = "ic_degrees_minus"+ Math.abs(value);
-                result = R.drawable.class.getField(nameResource).getInt(getResources());
-            }
-
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-            result =  R.drawable.ic_stat_error_outline;
-        } catch (NoSuchFieldException e) {
-            result =  R.drawable.ic_stat_error_outline;
-        }
-
-        return result;
-    }
 
 
 
 
-// Происходит, когда от сервера получен ответ
-    @Override
-    public void onWebAsyncTaskCompleted(String result) {
-
-        Log.d(TAG, "Ответ от сервера " + result);
-        Notification notification;
-
-        if (result != null){
-            if (Constants.ENABLED_DEBUG_TWIST) showToast(getApplication(), result);
-
-            WeatherPOJO weather = new WeatherPOJO(result);
-            notification = prepareNotification(getIcon(weather.getTemp()), "Ветер " + weather.getWind_spd() + "м/с", "Влажность " + weather.getHumidity() + "%", weather.getUpd_time());
-
-        } else {
-            if (Constants.ENABLED_DEBUG_TWIST) showToast(getApplication(), "Ошибка соединения");
-            notification = prepareNotification(R.drawable.ic_stat_cloud_off, "Нет связи", "", Calendar.getInstance().getTime());
-
-        }
-
-        NotificationManager mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        mNotificationManager.notify(NOTIFICATION_ID, notification);
-
-
-
-    }
 }

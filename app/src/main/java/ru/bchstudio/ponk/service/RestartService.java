@@ -31,7 +31,7 @@ public class RestartService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "default");
-        builder.setSmallIcon(R.mipmap.ic_launcher);
+        builder.setSmallIcon(R.drawable.ic_stat_name);
         builder.setContentTitle(null);
         builder.setContentText(null);
         Intent notificationIntent = new Intent(this, MainActivity.class);
@@ -40,7 +40,7 @@ public class RestartService extends Service {
 
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            manager.createNotificationChannel(new NotificationChannel("default", "기본 채널", NotificationManager.IMPORTANCE_DEFAULT));
+            manager.createNotificationChannel(new NotificationChannel("default", "default", NotificationManager.IMPORTANCE_DEFAULT));
         }
 
         Notification notification = builder.build();

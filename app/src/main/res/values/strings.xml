@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">Ponk: погода в Москве</string>
+    <string name="app_name">Example for ZONT</string>
 
-    <string name="recieve_start">Старт ресивера, попытка запустить сервис</string>
 </resources>
